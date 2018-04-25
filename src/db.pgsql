@@ -80,3 +80,39 @@ CREATE VIEW public.account(full_name, parent_name, name) AS
   SELECT full_name, parent_name, name FROM internal.account_materialized_view;
 
 COMMENT ON VIEW public.account IS 'View for accounts.';
+
+CREATE TABLE internal.commodity (
+  symbol VARCHAR(20) PRIMARY KEY,
+  is_prefix BOOLEAN NOT NULL,
+  has_space BOOLEAN NOT NULL
+);
+
+COMMENT ON TABLE internal.commodity IS 'Commodities and currencies are treated in the same manner. `is_prefix` determines whether the commodity should be printed before or after the amount, while `has_space` controls if there should be a space between the amount and the commodity in print.';
+
+CREATE VIEW public.commodity AS
+  SELECT symbol, is_prefix, has_space FROM internal.commodity;
+
+COMMENT ON VIEW public.commodity IS 'Commodities and currencies are treated in the same manner. `is_prefix` determines whether the commodity should be printed before or after the amount, while `has_space` controls if there should be a space between the amount and the commodity in print.';
+
+CREATE TABLE internal.transaction (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v1mc(),
+  date date NOT NULL,
+  text TEXT NOT NULL
+);
+
+COMMENT ON TABLE internal.transaction IS 'Table for storing transactions. The rows of the transaction are stored in `internal.transaction_row`';
+
+CREATE INDEX transaction_date ON internal.transaction (date);
+
+CREATE TABLE internal.transaction_row (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v1mc(),
+  transaction_id uuid NOT NULL REFERENCES internal.transaction,
+  account_id uuid NOT NULL REFERENCES internal.account,
+  amount DECIMAL(38,18) NOT NULL,
+  commodity VARCHAR(20) NOT NULL REFERENCES internal.commodity
+);
+
+COMMENT ON TABLE internal.transaction IS 'Table for storing rows of transactions (from table `internal.transaction`).';
+
+CREATE INDEX transaction_row_transaction_id ON internal.transaction_row (transaction_id);
+CREATE INDEX transaction_row_account_id ON internal.transaction_row (account_id);
