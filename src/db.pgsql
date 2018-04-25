@@ -102,6 +102,14 @@ $$;
 
 COMMENT ON FUNCTION public.add_commodity(VARCHAR(20)) IS 'Adds a new commodity with default settings (will look like "1.23 ABC").';
 
+CREATE FUNCTION public.add_commodity(IN symbol VARCHAR(20), IN is_prefix BOOLEAN, IN has_space BOOLEAN) RETURNS void
+  LANGUAGE 'sql'
+AS $$
+  INSERT INTO internal.commodity ("symbol", "is_prefix", "has_space") VALUES (symbol, is_prefix, has_space);
+$$;
+
+COMMENT ON FUNCTION public.add_commodity(VARCHAR(20), BOOLEAN, BOOLEAN) IS 'Adds a new commodity with custom settings.';
+
 CREATE TABLE internal.transaction (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v1mc(),
   date date NOT NULL,
