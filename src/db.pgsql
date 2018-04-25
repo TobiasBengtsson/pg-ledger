@@ -94,6 +94,14 @@ CREATE VIEW public.commodity AS
 
 COMMENT ON VIEW public.commodity IS 'Commodities and currencies are treated in the same manner. `is_prefix` determines whether the commodity should be printed before or after the amount, while `has_space` controls if there should be a space between the amount and the commodity in print.';
 
+CREATE FUNCTION public.add_commodity(IN symbol VARCHAR(20)) RETURNS void
+  LANGUAGE 'sql'
+AS $$
+  INSERT INTO internal.commodity ("symbol", is_prefix, has_space) VALUES (symbol, FALSE, TRUE);
+$$;
+
+COMMENT ON FUNCTION public.add_commodity(VARCHAR(20)) IS 'Adds a new commodity with default settings (will look like "1.23 ABC").';
+
 CREATE TABLE internal.transaction (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v1mc(),
   date date NOT NULL,
