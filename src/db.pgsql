@@ -132,3 +132,15 @@ COMMENT ON TABLE internal.transaction IS 'Table for storing rows of transactions
 
 CREATE INDEX transaction_row_transaction_id ON internal.transaction_row (transaction_id);
 CREATE INDEX transaction_row_account_id ON internal.transaction_row (account_id);
+
+CREATE VIEW public.account_balance AS
+  SELECT acc.full_name AS account_name, c.symbol AS commodity, SUM(tr.amount) AS balance
+  FROM internal.transaction_row tr
+  JOIN internal.account_materialized_view acc
+    ON tr.account_id = acc.id
+  JOIN internal.commodity c
+    ON tr.commodity = c.symbol
+  GROUP BY acc.full_name, c.symbol
+  HAVING SUM(tr.amount) <> 0;
+
+COMMENT ON VIEW public.account_balance IS 'View for getting the current balances of accounts.';
