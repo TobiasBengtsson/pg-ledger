@@ -94,18 +94,36 @@ CREATE VIEW public.commodity AS
 
 COMMENT ON VIEW public.commodity IS 'Commodities and currencies are treated in the same manner. `is_prefix` determines whether the commodity should be printed before or after the amount, while `has_space` controls if there should be a space between the amount and the commodity in print.';
 
-CREATE FUNCTION public.add_commodity(IN symbol VARCHAR(20)) RETURNS void
+CREATE FUNCTION internal.add_commodity(IN symbol VARCHAR(20), IN is_prefix BOOLEAN, IN has_space BOOLEAN) RETURNS VARCHAR(20)
+  LANGUAGE 'plpgsql'
+AS $$
+  DECLARE
+    trimmed_symbol VARCHAR(20);
+  BEGIN
+    trimmed_symbol := TRIM(symbol);
+    IF trimmed_symbol LIKE '% %' THEN
+      RAISE EXCEPTION 'Symbol with internal whitespace: %', trimmed_symbol;
+    ELSE
+      INSERT INTO internal.commodity ("symbol", "is_prefix", "has_space") VALUES (trimmed_symbol, is_prefix, has_space);
+      RETURN trimmed_symbol;
+    END IF;
+  END;
+$$;
+
+COMMENT ON FUNCTION internal.add_commodity(VARCHAR(20), BOOLEAN, BOOLEAN) IS 'Adds a new commodity with custom settings.';
+
+CREATE FUNCTION public.add_commodity(IN symbol VARCHAR(20)) RETURNS VARCHAR(20)
   LANGUAGE 'sql'
 AS $$
-  INSERT INTO internal.commodity ("symbol", is_prefix, has_space) VALUES (symbol, FALSE, TRUE);
+  SELECT internal.add_commodity (symbol, FALSE, TRUE);
 $$;
 
 COMMENT ON FUNCTION public.add_commodity(VARCHAR(20)) IS 'Adds a new commodity with default settings (will look like "1.23 ABC").';
 
-CREATE FUNCTION public.add_commodity(IN symbol VARCHAR(20), IN is_prefix BOOLEAN, IN has_space BOOLEAN) RETURNS void
+CREATE FUNCTION public.add_commodity(IN symbol VARCHAR(20), IN is_prefix BOOLEAN, IN has_space BOOLEAN) RETURNS VARCHAR(20)
   LANGUAGE 'sql'
 AS $$
-  INSERT INTO internal.commodity ("symbol", "is_prefix", "has_space") VALUES (symbol, is_prefix, has_space);
+  SELECT internal.add_commodity (symbol, is_prefix, has_space);
 $$;
 
 COMMENT ON FUNCTION public.add_commodity(VARCHAR(20), BOOLEAN, BOOLEAN) IS 'Adds a new commodity with custom settings.';
