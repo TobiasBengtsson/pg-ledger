@@ -20,13 +20,15 @@ CREATE TABLE internal.account (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v1mc(),
   name VARCHAR(100) NOT NULL,
   parent_id uuid REFERENCES internal.account,
-  UNIQUE(name, parent_id)
 );
 
 COMMENT ON TABLE internal.account IS 'Contains all accounts used in the database. The accounts are structured in a tree-like fashion, using a recursive nullable parent foreign key to the same table. There is also a constraint that two siblings must have unique name (so there can be for example only one Assets:Bank:HSBC account, but it is still possible to have Liabilities:Loans:HSBC in the same database).';
 
-CREATE UNIQUE INDEX top_level_account_unique ON internal.account (name)
+CREATE UNIQUE INDEX top_level_account_unique ON internal.account (LOWER(name))
 WHERE parent_id IS NULL;
+
+CREATE UNIQUE INDEX sub_level_account_unique ON internal.account (LOWER(name), parent_id)
+WHERE parent_id IS NOT NULL;
 
 CREATE FUNCTION internal.add_account(IN name TEXT) RETURNS uuid
   LANGUAGE 'sql'
