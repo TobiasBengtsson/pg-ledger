@@ -30,14 +30,6 @@ WHERE parent_id IS NULL;
 CREATE UNIQUE INDEX sub_level_account_unique ON internal.account (LOWER(name), parent_id)
 WHERE parent_id IS NOT NULL;
 
-CREATE FUNCTION internal.add_account(IN name TEXT) RETURNS uuid
-  LANGUAGE 'sql'
-AS $$
-  SELECT internal.add_account(name, NULL);
-$$;
-
-COMMENT ON FUNCTION internal.add_account(text) IS 'Adds a top-level account to the database. Returns the UUID of the newly created account.';
-
 CREATE FUNCTION internal.add_account(IN name TEXT, IN parent_id uuid) RETURNS uuid
   LANGUAGE 'sql'
 AS $$
@@ -46,6 +38,49 @@ AS $$
 $$;
 
 COMMENT ON FUNCTION internal.add_account(text, uuid) IS 'Adds a sub-level account to the database (i.e. the account has a parent). Returns the UUID of the newly created account.';
+
+CREATE FUNCTION internal.add_account(IN name TEXT) RETURNS uuid
+  LANGUAGE 'sql'
+AS $$
+  SELECT internal.add_account(name, NULL);
+$$;
+
+COMMENT ON FUNCTION internal.add_account(text) IS 'Adds a top-level account to the database. Returns the UUID of the newly created account.';
+
+CREATE FUNCTION public.add_account(IN full_name TEXT) RETURNS TEXT
+  LANGUAGE 'plpgsql'
+AS $$
+  DECLARE
+    current_account_id uuid;
+    current_account_name TEXT;
+    current_account_level INT;
+    current_parent_id uuid;
+  BEGIN
+    current_account_level := 1;
+    current_parent_id = NULL;
+    LOOP
+      current_account_name := split_part(full_name, ':', current_account_level);
+      EXIT WHEN LENGTH(TRIM(current_account_name)) < 1;
+      SELECT id FROM internal.account WHERE name = current_account_name AND ((current_parent_id IS NULL AND parent_id IS NULL) OR parent_id = current_parent_id) LIMIT 1 INTO current_account_id;
+      IF current_account_id IS NULL THEN
+        current_parent_id := internal.add_account(current_account_name, current_parent_id);
+      ELSE
+        current_parent_id := current_account_id;
+      END IF;
+      current_account_level := current_account_level + 1;
+    END LOOP;
+
+    RETURN (SELECT amv.full_name FROM internal.account_materialized_view amv WHERE id = current_parent_id);
+  END;
+$$;
+
+COMMENT ON FUNCTION public.add_account IS 'Adds a new account to the database on the format Topaccount:Subaccount:Subsubaccount and so on. Will check if necessary parent accounts exists and also create them if needed.
+
+Example: If adding Assets:Bank:Citibank, and if Assets exists but not Assets:Bank, the function will first create Assets:Bank which has Assets as a parent account. Then it will create Assets:Bank:Citibank with the newly created Assets:Bank account as parent account.
+
+Whitespace will be trimmed from the start and the end of accounts (and consequently also whitespace around ":" characters).
+
+Multiple accounts with the same name and parent (or same name if top-level account) are not allowed. The matching is case insensitive, so Assets and ASSETS are not both allowed as top-level accounts. However the casing used when adding an account the first time will be saved.';
 
 CREATE RECURSIVE VIEW internal.account_view(id, name, parent_id, parent_name, full_name) AS
   SELECT id, name, parent_id, NULL AS parent_name, CAST (name AS TEXT) AS full_name
