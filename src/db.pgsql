@@ -151,6 +151,67 @@ COMMENT ON TABLE internal.transaction IS 'Table for storing rows of transactions
 CREATE INDEX transaction_row_transaction_id ON internal.transaction_row (transaction_id);
 CREATE INDEX transaction_row_account_id ON internal.transaction_row (account_id);
 
+CREATE TYPE internal.add_transaction_row AS (
+  account_id uuid,
+  amount DECIMAL(38,18),
+  commodity VARCHAR(20)
+);
+
+CREATE FUNCTION internal.add_transaction (IN date DATE, IN text TEXT, IN rows internal.add_transaction_row[]) RETURNS uuid
+  LANGUAGE 'plpgsql'
+AS $$
+  DECLARE
+    transaction_id uuid;
+    row internal.add_transaction_row;
+  BEGIN
+    IF (SELECT COUNT(*) FROM
+          (SELECT SUM(r.amount) AS commodity_amount FROM UNNEST(rows) r GROUP BY commodity)
+        AS commodity_amount WHERE commodity_amount <> 0::DECIMAL(38,18)) <> 0 THEN
+      RAISE EXCEPTION 'Sum of transaction row amounts are distinct from zero.';
+    END IF;
+    INSERT INTO internal.transaction ("date", "text") VALUES (date, text) RETURNING id INTO transaction_id;
+    FOREACH row IN ARRAY rows LOOP
+      INSERT INTO internal.transaction_row ("transaction_id", account_id, amount, commodity)
+        VALUES (transaction_id, row.account_id, row.amount, row.commodity);
+    END LOOP;
+    RETURN transaction_id;
+  END;
+$$;
+
+COMMENT ON FUNCTION internal.add_transaction IS 'Entry point for adding a new transaction.';
+
+CREATE FUNCTION internal.get_account_id(IN account_full_name TEXT) RETURNS uuid
+  LANGUAGE 'sql'
+AS $$
+  SELECT id FROM internal.account_materialized_view WHERE full_name = account_full_name;
+$$;
+
+COMMENT ON FUNCTION internal.get_account_id IS 'Get the account id from the account full name (e.g. Assets:Bank:Citibank). Will trim any whitespace at the start and end of string, as well as around the account separation character ":".';
+
+CREATE INDEX account_full_name_id_lookup ON internal.account_materialized_view (full_name, id);
+
+CREATE TYPE public.add_transaction_row AS (
+  account_full_name TEXT,
+  amount DECIMAL(38,18),
+  commodity VARCHAR(20)
+);
+
+CREATE FUNCTION internal.map_public_to_internal_transaction_row(IN public_rows public.add_transaction_row[]) RETURNS internal.add_transaction_row[]
+  LANGUAGE 'sql'
+AS $$
+  SELECT ARRAY(
+    SELECT (internal.get_account_id(account_full_name), amount, commodity)::internal.add_transaction_row
+    FROM UNNEST(public_rows));
+$$;
+
+COMMENT ON FUNCTION internal.map_public_to_internal_transaction_row IS 'Converts an array of public.add_transaction to an array of internal.add_transaction, by replacing full names of accounts with their corresponding internal IDs.';
+
+CREATE FUNCTION public.add_transaction (IN date DATE, IN text TEXT, VARIADIC rows public.add_transaction_row[]) RETURNS uuid
+  LANGUAGE 'sql'
+AS $$
+  SELECT internal.add_transaction (date, text, internal.map_public_to_internal_transaction_row(rows));
+$$;
+
 CREATE VIEW public.account_balance AS
   SELECT acc.full_name AS account_name, c.symbol AS commodity, SUM(tr.amount) AS balance
   FROM internal.transaction_row tr
