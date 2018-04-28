@@ -33,8 +33,7 @@ WHERE parent_id IS NOT NULL;
 CREATE FUNCTION internal.add_account(IN name TEXT) RETURNS uuid
   LANGUAGE 'sql'
 AS $$
-    INSERT INTO internal.account ("name", "parent_id") VALUES (TRIM(name), NULL)
-    RETURNING id;
+  SELECT internal.add_account(name, NULL);
 $$;
 
 COMMENT ON FUNCTION internal.add_account(text) IS 'Adds a top-level account to the database. Returns the UUID of the newly created account.';
