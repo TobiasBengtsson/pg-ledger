@@ -19,7 +19,7 @@ COMMENT ON SCHEMA public
 CREATE TABLE internal.account (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v1mc(),
   name VARCHAR(100) NOT NULL,
-  parent_id uuid REFERENCES internal.account,
+  parent_id uuid REFERENCES internal.account ON DELETE CASCADE
 );
 
 COMMENT ON TABLE internal.account IS 'Contains all accounts used in the database. The accounts are structured in a tree-like fashion, using a recursive nullable parent foreign key to the same table. There is also a constraint that two siblings must have unique name (so there can be for example only one Assets:Bank:HSBC account, but it is still possible to have Liabilities:Loans:HSBC in the same database).';
