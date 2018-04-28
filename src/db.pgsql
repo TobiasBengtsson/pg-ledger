@@ -18,7 +18,7 @@ COMMENT ON SCHEMA public
 
 CREATE TABLE internal.account (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v1mc(),
-  name VARCHAR(100) NOT NULL,
+  name VARCHAR(100) NOT NULL CHECK (LENGTH(name) > 0),
   parent_id uuid REFERENCES internal.account ON DELETE CASCADE
 );
 
