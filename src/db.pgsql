@@ -28,7 +28,7 @@ COMMENT ON TABLE internal.account IS 'Contains all accounts used in the database
 CREATE FUNCTION internal.add_account(IN name TEXT) RETURNS uuid
   LANGUAGE 'sql'
 AS $$
-    INSERT INTO internal.account ("name", "parent_id") VALUES (name, NULL)
+    INSERT INTO internal.account ("name", "parent_id") VALUES (TRIM(name), NULL)
     RETURNING id;
 $$;
 
@@ -37,7 +37,7 @@ COMMENT ON FUNCTION internal.add_account(text) IS 'Adds a top-level account to t
 CREATE FUNCTION internal.add_account(IN name TEXT, IN parent_id uuid) RETURNS uuid
   LANGUAGE 'sql'
 AS $$
-  INSERT INTO internal.account ("name", "parent_id") VALUES (name, parent_id)
+  INSERT INTO internal.account ("name", "parent_id") VALUES (TRIM(name), parent_id)
   RETURNING id;
 $$;
 
