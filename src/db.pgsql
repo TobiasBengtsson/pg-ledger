@@ -281,3 +281,7 @@ AS $$
   WITH del AS (DELETE FROM internal.transaction WHERE id = transaction_id RETURNING *)
   SELECT COUNT(*) > 0 AS deleted FROM del;
 $$;
+
+COMMENT ON FUNCTION public.delete_transaction IS 'Deletes the transaction with the specified ID (will also delete the corresponding transaction rows).
+
+Returns a boolean indicating whether a row was deleted or not.';
