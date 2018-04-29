@@ -179,10 +179,10 @@ CREATE INDEX transaction_date ON internal.transaction (date);
 
 CREATE TABLE internal.transaction_row (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v1mc(),
-  transaction_id uuid NOT NULL REFERENCES internal.transaction,
-  account_id uuid NOT NULL REFERENCES internal.account,
+  transaction_id uuid NOT NULL REFERENCES internal.transaction ON DELETE CASCADE,
+  account_id uuid NOT NULL REFERENCES internal.account ON DELETE RESTRICT,
   amount DECIMAL(38,18) NOT NULL,
-  commodity VARCHAR(20) NOT NULL REFERENCES internal.commodity
+  commodity VARCHAR(20) NOT NULL REFERENCES internal.commodity ON DELETE RESTRICT
 );
 
 COMMENT ON TABLE internal.transaction_row IS 'Table for storing rows of transactions (from table `internal.transaction`).';
@@ -274,3 +274,10 @@ CREATE VIEW public.transaction_row AS
   FROM internal.transaction_row;
 
 COMMENT ON VIEW public.transaction_row IS 'View for getting transaction rows.';
+
+CREATE FUNCTION public.delete_transaction (IN transaction_id uuid) RETURNS BOOLEAN
+  LANGUAGE 'sql'
+AS $$
+  WITH del AS (DELETE FROM internal.transaction WHERE id = transaction_id RETURNING *)
+  SELECT COUNT(*) > 0 AS deleted FROM del;
+$$;
