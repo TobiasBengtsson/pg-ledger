@@ -262,3 +262,15 @@ CREATE VIEW public.account_balance AS
   HAVING SUM(tr.amount) <> 0;
 
 COMMENT ON VIEW public.account_balance IS 'View for getting the current balances of accounts.';
+
+CREATE VIEW public.transaction AS
+  SELECT id, date, text
+  FROM internal.transaction;
+
+COMMENT ON VIEW public.transaction IS 'View for getting transactions.';
+
+CREATE VIEW public.transaction_row AS
+  SELECT id, transaction_id, account_id, amount, commodity
+  FROM internal.transaction_row;
+
+COMMENT ON VIEW public.transaction_row IS 'View for getting transaction rows.';
