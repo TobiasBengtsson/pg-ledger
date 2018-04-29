@@ -185,7 +185,7 @@ CREATE TABLE internal.transaction_row (
   commodity VARCHAR(20) NOT NULL REFERENCES internal.commodity
 );
 
-COMMENT ON TABLE internal.transaction IS 'Table for storing rows of transactions (from table `internal.transaction`).';
+COMMENT ON TABLE internal.transaction_row IS 'Table for storing rows of transactions (from table `internal.transaction`).';
 
 CREATE INDEX transaction_row_transaction_id ON internal.transaction_row (transaction_id);
 CREATE INDEX transaction_row_account_id ON internal.transaction_row (account_id);
