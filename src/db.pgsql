@@ -395,8 +395,9 @@ CREATE VIEW public.transaction AS
 COMMENT ON VIEW public.transaction IS 'View for getting transactions.';
 
 CREATE VIEW public.transaction_row AS
-  SELECT id, transaction_id, account_id, amount, commodity
-  FROM internal.transaction_row;
+  SELECT tr.id, tr.transaction_id, a.full_name as account_name, tr.amount, tr.commodity
+  FROM internal.transaction_row tr
+  JOIN internal.account_materialized_view a ON tr.account_id = a.id;
 
 COMMENT ON VIEW public.transaction_row IS 'View for getting transaction rows.';
 
@@ -420,3 +421,4 @@ CREATE TABLE internal.migrations (
 );
 
 INSERT INTO internal.migrations (id) VALUES (1);
+INSERT INTO internal.migrations (id) VALUES (2);
