@@ -107,7 +107,7 @@ AS $$
   END;
 $$;
 
-COMMENT ON FUNCTION public.add_account IS
+COMMENT ON FUNCTION public.add_account(text) IS
 'Adds a new account to the database on the format
 Topaccount:Subaccount:Subsubaccount and so on. Will check if necessary parent
 accounts exists and also create them if needed.
@@ -161,7 +161,7 @@ AS $$
   END;
 $$;
 
-COMMENT ON FUNCTION internal.trigger_refresh_account_materialized_view IS
+COMMENT ON FUNCTION internal.trigger_refresh_account_materialized_view() IS
 'Trigger that updates `internal.account_materialized_view`. Meant to be run
 on every update to the `internal.account` table.';
 
@@ -320,7 +320,8 @@ AS $$
   END;
 $$;
 
-COMMENT ON FUNCTION internal.add_transaction IS
+COMMENT ON FUNCTION
+internal.add_transaction(date, text, internal.add_transaction_row[]) IS
 'Entry point for adding a new transaction.';
 
 CREATE FUNCTION internal.get_account_id(IN account_full_name TEXT) RETURNS uuid
@@ -331,7 +332,7 @@ AS $$
   WHERE full_name = account_full_name;
 $$;
 
-COMMENT ON FUNCTION internal.get_account_id IS
+COMMENT ON FUNCTION internal.get_account_id(text) IS
 'Get the account id from the account full name (e.g. Assets:Bank:Citibank).
 Will trim any whitespace at the start and end of string, as well as around the
 account separation character ":".';
@@ -357,8 +358,9 @@ AS $$
     FROM UNNEST(public_rows));
 $$;
 
-COMMENT ON FUNCTION internal.map_public_to_internal_transaction_row IS
-'Converts an array of public.add_transaction to an array of
+COMMENT ON FUNCTION
+internal.map_public_to_internal_transaction_row(public.add_transaction_row[])
+IS 'Converts an array of public.add_transaction to an array of
 internal.add_transaction, by replacing full names of accounts with their
 corresponding internal IDs.';
 
@@ -407,7 +409,7 @@ AS $$
   SELECT COUNT(*) > 0 AS deleted FROM del;
 $$;
 
-COMMENT ON FUNCTION public.delete_transaction IS
+COMMENT ON FUNCTION public.delete_transaction(uuid) IS
 'Deletes the transaction with the specified ID (will also delete the
 corresponding transaction rows).
 
