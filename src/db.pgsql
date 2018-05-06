@@ -1,19 +1,9 @@
-CREATE USER pgledger_superuser PASSWORD 'CHANGE_ME';
-CREATE USER pgledger_user PASSWORD 'CHANGE_ME';
-
-CREATE DATABASE pgledger WITH OWNER=pgledger_superuser;
-
-COMMENT ON DATABASE pgledger
-  IS 'Ledger-like database for accounting';
-
 CREATE EXTENSION "uuid-ossp";
 
-CREATE SCHEMA internal AUTHORIZATION pgledger_superuser;
+CREATE SCHEMA internal;
 COMMENT ON SCHEMA internal IS
 'Schema for features that should not be exposed to users of the database.';
 
-ALTER SCHEMA public OWNER TO pgledger_superuser;
-GRANT ALL ON SCHEMA public TO pgledger_user;
 COMMENT ON SCHEMA public
   IS 'Schema for public features of the database.';
 
