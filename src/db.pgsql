@@ -241,14 +241,15 @@ COMMENT ON FUNCTION public.add_commodity(VARCHAR(20), BOOLEAN, BOOLEAN) IS
 CREATE TABLE internal.transaction (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v1mc(),
   date date NOT NULL,
-  text TEXT NOT NULL
+  text TEXT NOT NULL,
+  insertion_order BIGSERIAL UNIQUE
 );
 
 COMMENT ON TABLE internal.transaction IS
 'Table for storing transactions.The rows of the transaction are stored in
 `internal.transaction_row`';
 
-CREATE INDEX transaction_date ON internal.transaction (date);
+CREATE INDEX transaction_date_insertionorder ON internal.transaction (date, insertion_order);
 
 CREATE TABLE internal.transaction_row (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v1mc(),
@@ -379,7 +380,7 @@ COMMENT ON VIEW public.account_balance IS
 'View for getting the current balances of accounts.';
 
 CREATE VIEW public.transaction AS
-  SELECT id, date, text
+  SELECT id, date, text, insertion_order
   FROM internal.transaction;
 
 COMMENT ON VIEW public.transaction IS 'View for getting transactions.';
@@ -489,3 +490,4 @@ COMMENT ON FUNCTION public.account_balance_change_from(date) IS
 balance is equal to the balance at the end of the day before the from_date.';
 
 INSERT INTO internal.migrations (id) VALUES (3);
+INSERT INTO internal.migrations (id) VALUES (4);
