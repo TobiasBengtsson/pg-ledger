@@ -23,6 +23,6 @@ account with the specified name. If the transaction contains multiple rows
 with the same account and commodity, the amounts for that account and commodity
 are summed in one row. If on the other hand a transaction contains multiple
 rows with the same account but different commodities, they are presented as two
-separate rows.'
+separate rows.';
 
 INSERT INTO internal.migrations (id) VALUES (5);
