@@ -355,6 +355,15 @@ IS 'Converts an array of public.add_transaction to an array of
 internal.add_transaction, by replacing full names of accounts with their
 corresponding internal IDs.';
 
+CREATE FUNCTION public.add_transaction_arrayrows (IN date DATE, IN text TEXT,
+  rows public.add_transaction_row[])
+  RETURNS uuid
+  LANGUAGE 'sql'
+AS $$
+  SELECT internal.add_transaction (date, text,
+    internal.map_public_to_internal_transaction_row(rows));
+$$;
+
 CREATE FUNCTION public.add_transaction (IN date DATE, IN text TEXT,
   VARIADIC rows public.add_transaction_row[])
   RETURNS uuid
@@ -587,3 +596,4 @@ COMMENT ON FUNCTION public.add_formula_term IS
 'Adds a new formula term for the specified formula.';
 
 INSERT INTO internal.migrations (id) VALUES (6);
+INSERT INTO internal.migrations (id) VALUES (7);
