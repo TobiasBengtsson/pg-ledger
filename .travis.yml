@@ -9,4 +9,8 @@ before_install:
   - docker pull postgres:10.3
 
 script:
-  - sh test.sh
+  - docker build -t pg-ledger .
+  - docker run --name pg-ledger-test -d pg-ledger
+  - docker exec pg-ledger-test sh -c 'chmod 0500 /tmp/source/test.sh'
+  - sleep 10
+  - docker exec pg-ledger-test sh -c '/tmp/source/test.sh'
