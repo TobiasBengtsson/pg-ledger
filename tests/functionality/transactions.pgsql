@@ -7,6 +7,9 @@ SELECT add_account('Liabilities:Bank:Mortgage');
 
 SELECT add_commodity('USD');
 
+-- To prevent leakage from other tests
+ALTER SEQUENCE internal.transaction_insertion_order_seq RESTART WITH 1;
+
 SELECT add_transaction(
   '2018-09-04',
   'TestTransaction',

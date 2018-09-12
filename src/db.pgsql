@@ -753,3 +753,26 @@ day is equal to the date of the latest transaction in the system.';
 
 INSERT INTO internal.migrations (id) VALUES (8);
 INSERT INTO internal.migrations (id) VALUES (9);
+
+CREATE FUNCTION public.delete_account (IN account_full_name TEXT)
+  RETURNS BOOLEAN
+  LANGUAGE 'sql'
+AS $$
+  WITH del AS
+    (DELETE FROM internal.account
+      WHERE id = internal.get_account_id(account_full_name)
+      RETURNING *)
+  SELECT COUNT(*) > 0 AS deleted FROM del;
+$$;
+
+COMMENT ON FUNCTION public.delete_account(text) IS
+'Deletes the account with the specified full name. Note that if the account is
+in use, there are certain FK relationships that prevents the account from being
+deleted.
+
+Deleting a parent account will cause all its sub-accounts to be deleted as well
+(provided they are not in use).
+
+Returns a boolean indicating whether an account was deleted.';
+
+INSERT INTO internal.migrations (id) VALUES (10);
