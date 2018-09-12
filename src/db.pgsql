@@ -776,3 +776,23 @@ Deleting a parent account will cause all its sub-accounts to be deleted as well
 Returns a boolean indicating whether an account was deleted.';
 
 INSERT INTO internal.migrations (id) VALUES (10);
+
+CREATE FUNCTION public.delete_commodity (IN commodity_symbol VARCHAR(20))
+  RETURNS BOOLEAN
+  LANGUAGE 'sql'
+AS $$
+  WITH del AS
+    (DELETE FROM internal.commodity
+      WHERE symbol = commodity_symbol
+      RETURNING *)
+  SELECT COUNT(*) > 0 AS deleted FROM del;
+$$;
+
+COMMENT ON FUNCTION public.delete_commodity(VARCHAR(20)) IS
+'Deletes the commodity with the specified symbol. Note that if the commodity is
+in use, there are certain FK relationships that prevents the commodity from
+being deleted.
+
+Returns a boolean indicating whether a commodity was deleted.';
+
+INSERT INTO internal.migrations (id) VALUES (11);
