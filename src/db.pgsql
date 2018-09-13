@@ -277,7 +277,7 @@ CREATE TABLE internal.transaction_row (
     REFERENCES internal.account ON DELETE RESTRICT,
   amount DECIMAL(38,18) NOT NULL,
   commodity VARCHAR(20) NOT NULL
-    REFERENCES internal.commodity ON DELETE RESTRICT
+    REFERENCES internal.commodity ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
 COMMENT ON TABLE internal.transaction_row IS
@@ -796,3 +796,42 @@ being deleted.
 Returns a boolean indicating whether a commodity was deleted.';
 
 INSERT INTO internal.migrations (id) VALUES (11);
+
+CREATE FUNCTION public.edit_commodity(
+  IN current_commodity_symbol VARCHAR(20),
+  IN new_commodity_symbol VARCHAR(20),
+  IN new_is_prefix BOOLEAN,
+  IN new_has_space BOOLEAN
+)
+RETURNS void
+LANGUAGE 'sql'
+AS $$
+  UPDATE internal.commodity
+  SET symbol = new_commodity_symbol,
+      is_prefix = new_is_prefix,
+      has_space = new_has_space
+  WHERE symbol = current_commodity_symbol;
+$$;
+
+COMMENT ON FUNCTION
+public.edit_commodity(VARCHAR(20), VARCHAR(20), BOOLEAN, BOOLEAN)
+IS
+'Updates the commodity with the specified (current) symbol with new values for
+symbol, is_prefix and has_space.';
+
+CREATE FUNCTION public.edit_commodity(
+  IN current_commodity_symbol VARCHAR(20),
+  IN new_commodity_symbol VARCHAR(20)
+)
+RETURNS void
+LANGUAGE 'sql'
+AS $$
+  UPDATE internal.commodity
+  SET symbol = new_commodity_symbol
+  WHERE symbol = current_commodity_symbol;
+$$;
+
+COMMENT ON FUNCTION public.edit_commodity(VARCHAR(20), VARCHAR(20)) IS
+'Updates the symbol of the commodity with the specified current symbol.';
+
+INSERT INTO internal.migrations (id) VALUES (12);

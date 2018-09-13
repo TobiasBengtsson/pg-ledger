@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(4);
+SELECT plan(6);
 
 SELECT add_commodity('$', true, false);
 SELECT add_commodity('SEK', false, true);
@@ -53,6 +53,34 @@ SELECT throws_ok(
   '23503',
   'update or delete on table "commodity" violates foreign key constraint "transaction_row_commodity_fkey" on table "transaction_row"',
   'delete_commodity should result in FK violation error if commodity is used by a transaction');
+
+SELECT edit_commodity('kr', 'KR', true, true);
+
+SELECT results_eq(
+  'SELECT symbol::text, is_prefix, has_space
+  FROM commodity
+  ORDER BY symbol;',
+  'SELECT * FROM (VALUES
+    (''$'', true, false),
+    (''HK$'', true, true),
+    (''KR'', true, true),
+    (''SEK'', false, true)
+  ) AS t (symbol, is_prefix, has_space)',
+  'edit_commodity updates all properties');
+
+SELECT edit_commodity('$', '$$$');
+
+SELECT results_eq(
+  'SELECT symbol::text, is_prefix, has_space
+  FROM commodity
+  ORDER BY symbol;',
+  'SELECT * FROM (VALUES
+    (''$$$'', true, false),
+    (''HK$'', true, true),
+    (''KR'', true, true),
+    (''SEK'', false, true)
+  ) AS t (symbol, is_prefix, has_space)',
+  'edit_commodity with only symbol keeps the old is_prefix and has_space');
 
 SELECT * FROM finish();
 ROLLBACK;
