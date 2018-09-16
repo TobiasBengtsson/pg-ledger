@@ -835,3 +835,37 @@ COMMENT ON FUNCTION public.edit_commodity(VARCHAR(20), VARCHAR(20)) IS
 'Updates the symbol of the commodity with the specified current symbol.';
 
 INSERT INTO internal.migrations (id) VALUES (12);
+
+CREATE FUNCTION internal.rename_account(
+  IN account_id uuid,
+  IN new_name VARCHAR(100)
+)
+RETURNS void
+LANGUAGE 'plpgsql'
+AS $$
+  BEGIN
+    IF new_name LIKE '%:%' THEN
+      RAISE EXCEPTION 'New name cannot contain colons.';
+    ELSIF (SELECT COUNT(*) FROM internal.account WHERE id = account_id) < 1 THEN
+      RAISE EXCEPTION 'Account to rename was not found.';
+    ELSE
+      UPDATE internal.account
+        SET name = new_name
+        WHERE id = account_id;
+    END IF;
+  END
+$$;
+
+CREATE FUNCTION public.rename_account(
+  IN account_full_name TEXT,
+  IN new_name VARCHAR(100)
+)
+RETURNS void
+LANGUAGE 'sql'
+AS $$
+  SELECT internal.rename_account(
+    internal.get_account_id(account_full_name),
+    new_name);
+$$;
+
+INSERT INTO internal.migrations (id) VALUES (13);
