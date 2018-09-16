@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(7);
+SELECT plan(12);
 
 SELECT add_account('Assets:Bank:Savings');
 SELECT add_account('Assets:Bank:Current');
@@ -69,6 +69,46 @@ SELECT results_eq(
 SELECT is_empty(
   'SELECT * FROM formula_term',
   'delete_account should cascade deletes to formula terms');
+
+SELECT rename_account('Liabilities:Bank', 'Bank of America');
+
+SELECT results_eq(
+  'SELECT name::text, full_name, parent_name
+  FROM account
+  ORDER BY full_name;',
+  'SELECT * FROM (VALUES
+    (''Assets'', ''Assets'', NULL::text),
+    (''Liabilities'', ''Liabilities'', NULL::text),
+    (''Bank of America'', ''Liabilities:Bank of America'', ''Liabilities''),
+    (''Mortgage'', ''Liabilities:Bank of America:Mortgage'', ''Liabilities:Bank of America'')
+  ) AS t (name, full_name, parent_name)',
+  'rename_account should rename non-parent account correctly');
+
+SELECT throws_ok(
+  'SELECT rename_account(''Liabilities'', ''Assets'')',
+  '23505',
+  'duplicate key value violates unique constraint "top_level_account_unique"',
+  'Cannot rename a top-level account to an already existing one');
+
+SELECT add_account('Liabilities:Citibank');
+
+SELECT throws_ok(
+  'SELECT rename_account(''Liabilities:Citibank'', ''Bank of America'')',
+  '23505',
+  'duplicate key value violates unique constraint "sub_level_account_unique"',
+  'Cannot rename a sub-level account to an already existing one');
+
+SELECT throws_ok(
+  'SELECT rename_account(''Non:Existing:Account'', ''Something'')',
+  'P0001',
+  'Account to rename was not found.',
+  'rename_account throws error if account does not exist');
+
+SELECT throws_ok(
+  'SELECT rename_account(''Liabilities:Citibank'', ''HSBC:Savings'')',
+  'P0001',
+  'New name cannot contain colons.',
+  'rename_account throws error if new_name contains a colon');
 
 SELECT * FROM finish();
 ROLLBACK;
